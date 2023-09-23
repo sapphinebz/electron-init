@@ -13,7 +13,7 @@ function listenShortcutKey(shortcutKey) {
     }
 
     return () => {
-      if (globalShortcut.isRegistered("CommandOrControl+X")) {
+      if (globalShortcut.isRegistered(shortcutKey)) {
         globalShortcut.unregister(shortcutKey);
       }
     };
