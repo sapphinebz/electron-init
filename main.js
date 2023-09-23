@@ -1,12 +1,30 @@
 const { app, BrowserWindow } = require("electron");
 const { merge } = require("rxjs");
 const path = require("node:path");
-
 const { share, switchMap, tap, filter } = require("rxjs/operators");
 const { fromNodeEvent } = require("./utils/from-node-event");
 const { listenShortcutKey } = require("./utils/shortcut-key");
+const {
+  onIPCMainAsyncMessage,
+  onIPCMainSyncMessage,
+  fromIPCAsyncArg,
+} = require("./utils/ipc");
+const { pptGetGoldTrader } = require("./utils/puppeteer");
 
 // main process กับ renderer process
+
+const GET_GOLD_EVENT = "get-gold";
+fromIPCAsyncArg(GET_GOLD_EVENT)
+  .pipe(
+    switchMap(([event, arg]) => {
+      return pptGetGoldTrader().pipe(
+        tap((gold) => {
+          event.sender.send(GET_GOLD_EVENT, gold);
+        })
+      );
+    })
+  )
+  .subscribe();
 
 const onAppReady = fromNodeEvent(app, "ready").pipe(share());
 const onAppWindowAllClosed = fromNodeEvent(app, "window-all-closed").pipe(
@@ -53,11 +71,11 @@ onWinMinimize.subscribe(() => {
   console.log("minimize");
 });
 
-onAppReady
-  .pipe(switchMap(() => listenShortcutKey("CommandOrControl+X")))
-  .subscribe(() => {
-    console.log("shortcut key press!");
-  });
+// onAppReady
+//   .pipe(switchMap(() => listenShortcutKey("CommandOrControl+X")))
+//   .subscribe(() => {
+//     console.log("shortcut key press!");
+//   });
 
 onAppWindowAllClosed.subscribe(() => {
   console.log("close!");

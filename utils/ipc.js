@@ -1,6 +1,6 @@
 const { ipcMain } = require("electron");
 const { fromEventPattern } = require("rxjs");
-const { share } = require("rxjs/operators");
+const { share, filter } = require("rxjs/operators");
 
 // Event handler for asynchronous incoming messages
 const ASYNC_MESSAGE_EVENT = "asynchronous-message";
@@ -12,6 +12,16 @@ const onIPCMainAsyncMessage = fromEventPattern(
   (handler, cleanup) => cleanup()
 ).pipe(share());
 
+/**
+ * @param {(message: string) => any} predicate
+ * @returns
+ */
+function fromIPCAsyncArg(equalityArg) {
+  return onIPCMainAsyncMessage.pipe(
+    filter(([event, arg]) => arg === equalityArg)
+  );
+}
+
 // Event handler for synchronous incoming messages
 const SYNC_MESSAGE_EVENT = "synchronous-message";
 const onIPCMainSyncMessage = fromEventPattern(
@@ -22,21 +32,15 @@ const onIPCMainSyncMessage = fromEventPattern(
   (handler, cleanup) => cleanup()
 ).pipe(share());
 
+// onIPCMainSyncMessage.subscribe(([event, arg]) => {
+//   console.log(arg);
+//   setTimeout(() => {
+//     event.returnValue = "sync pong";
+//   }, 1000);
+// });
+
 module.exports = {
   onIPCMainAsyncMessage,
   onIPCMainSyncMessage,
+  fromIPCAsyncArg,
 };
-
-// onIPCMainAsyncMessage.subscribe(([event, arg]) => {
-//     console.log("onIPCMainMessage", value);
-
-//     //   // Event emitter for sending asynchronous messages
-//     //   event.sender.send("asynchronous-reply", "async pong");
-//   });
-
-//   onIPCMainSyncMessage.subscribe(([event, arg]) => {
-//     console.log(arg);
-
-//     // Synchronous event emmision
-//     event.returnValue = "sync pong";
-//   });
