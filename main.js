@@ -1,10 +1,12 @@
 const { app, BrowserWindow } = require("electron");
-const { fromEvent, merge } = require("rxjs");
+const { merge } = require("rxjs");
 const path = require("node:path");
 
 const { share, switchMap, tap, filter } = require("rxjs/operators");
 const { fromNodeEvent } = require("./utils/from-node-event");
 const { listenShortcutKey } = require("./utils/shortcut-key");
+
+// main process กับ renderer process
 
 const onAppReady = fromNodeEvent(app, "ready").pipe(share());
 const onAppWindowAllClosed = fromNodeEvent(app, "window-all-closed").pipe(
@@ -21,25 +23,35 @@ const onAppActivateNoWindows = onAppActivate.pipe(
   share()
 );
 
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-    },
-  });
+const onWinLoad = merge(onAppActivateNoWindows, onAppReady).pipe(
+  switchMap(async () => {
+    const win = new BrowserWindow({
+      width: 800,
+      height: 600,
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        nodeIntegration: true,
+      },
+    });
 
-  win.loadFile("index.html");
-};
+    // console.log(win.webContents);
+    // win.loadURL("https://github.com");
+    await win.loadFile("index.html");
+    return win;
+  }),
+  share()
+);
 
-merge(onAppActivateNoWindows, onAppReady)
-  .pipe(
-    tap(() => {
-      createWindow();
-    })
-  )
-  .subscribe();
+const onWinMinimize = onWinLoad.pipe(
+  switchMap((win) => {
+    return fromNodeEvent(win, "minimize");
+  }),
+  share()
+);
+
+onWinMinimize.subscribe(() => {
+  console.log("minimize");
+});
 
 onAppReady
   .pipe(switchMap(() => listenShortcutKey("CommandOrControl+X")))
