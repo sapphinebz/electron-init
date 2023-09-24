@@ -1,6 +1,9 @@
 // const { ipcRenderer } = require("electron");
 // // console.log("renderer", ipcRenderer);
 
+// window.electronAPI.setTitle(title);
+console.log("renderer", window.electronAPI);
+
 // loadScript("https://unpkg.com/rxjs@^7/dist/bundles/rxjs.umd.min.js", () => {
 //   // const { fromEvent } = rxjs;
 //   // fromEvent()

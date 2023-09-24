@@ -5,6 +5,11 @@ const {
   fromAsyncReply,
   sendAsyncMessage,
 } = require("./utils/ipc-renderer");
+const { contextBridge } = require("electron");
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  setTitle: (title) => {},
+});
 
 const onDOMContentLoaded = fromEvent(window, "DOMContentLoaded").pipe(share());
 
@@ -19,17 +24,16 @@ onDOMContentLoaded.subscribe(() => {
   }
 });
 
-const GET_GOLD_EVENT = "get-gold";
 fromElementEvent("#fetch-gold-btn", "click").subscribe(() => {
-  sendAsyncMessage(GET_GOLD_EVENT);
+  sendAsyncMessage("gold", "get-gold");
 });
-fromAsyncReply(GET_GOLD_EVENT).subscribe(([event, arg]) => {
+fromAsyncReply("res-gold").subscribe(([event, arg]) => {
   const container = document.querySelector("#gold-price-container");
   container.innerText = JSON.stringify(arg);
 });
 
 fromElementEvent("#button", "click").subscribe(() => {
-  console.log("click");
+  console.log(sendSyncMessage("test-sync", "sync ping"));
 });
 
 function fromElementEvent(selector, eventName) {

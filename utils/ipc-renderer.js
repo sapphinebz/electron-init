@@ -2,13 +2,12 @@ const { ipcRenderer } = require("electron");
 const { fromEventPattern } = require("rxjs");
 
 /**
- *
+ * @param {string} channel
  * @param {string} message
  * @returns any
  */
-const SYNC_MESSAGE_EVENT = "synchronous-message";
-function sendSyncMessage(message) {
-  const syncback = ipcRenderer.sendSync(SYNC_MESSAGE_EVENT, message);
+function sendSyncMessage(channel, message) {
+  const syncback = ipcRenderer.sendSync(channel, message);
   return syncback;
 }
 
@@ -30,11 +29,12 @@ function fromAsyncReply(eventName) {
 
 /**
  *
+ * @param {string} channel
  * @param {string} message
  */
-const ASYNC_MESSAGE_EVENT = "asynchronous-message";
-function sendAsyncMessage(message) {
-  ipcRenderer.send(ASYNC_MESSAGE_EVENT, message);
+
+function sendAsyncMessage(channel, message) {
+  ipcRenderer.send(channel, message);
 }
 
 module.exports = {
