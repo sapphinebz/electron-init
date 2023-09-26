@@ -9,21 +9,23 @@
     />
     <title>Hello World!</title>
     <script src="./renderer.js"></script>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Hello World!</h1>
-    We are using Node.js <span id="node-version"></span>, Chromium
-    <span id="chrome-version"></span>, and Electron
-    <span id="electron-version"></span>.
     <div>
-      <button id="button">submit</button>
+      <button id="chooseDirectoryBtn">choose directory</button>
+    </div>
+    <div data-directory-choosen></div>
+    <div>
+      <span> text1: </span>
+      <input data-form-control name="source" type="text" id="source-inpt" />
     </div>
     <div>
-      <h3>Gold Price</h3>
-      <div>
-        <button id="fetch-gold-btn">fetch gold</button>
-      </div>
-      <div id="gold-price-container"></div>
+      <span> text2: </span>
+      <input data-form-control name="replace" type="text" id="replace-inpt" />
+    </div>
+    <div>
+      <button id="submitBtn">submit</button>
     </div>
   </body>
 </html>

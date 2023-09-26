@@ -1,31 +1,27 @@
 const { app, BrowserWindow } = require("electron");
-const { merge } = require("rxjs");
+const { merge, concat, from, connectable, ReplaySubject } = require("rxjs");
 const path = require("node:path");
-const { share, switchMap, tap, filter } = require("rxjs/operators");
+const {
+  share,
+  switchMap,
+  tap,
+  filter,
+  takeUntil,
+  take,
+  map,
+  shareReplay,
+  withLatestFrom,
+} = require("rxjs/operators");
+const dialog = require("./utils/dialog");
 const { fromNodeEvent } = require("./utils/from-node-event");
-// const { listenShortcutKey } = require("./utils/shortcut-key");
-const { listenIPCRenderer } = require("./utils/ipc-main");
-const { pptGetGoldTrader } = require("./utils/puppeteer");
-const { dialogOpenFile } = require("./utils/dialog");
+const { listenShortcutKey } = require("./utils/shortcut-key");
+const ipcMain = require("./utils/ipc-main");
+const {
+  pptGetGoldTrader,
+  pptGetTerdThaiAirQuality,
+} = require("./utils/puppeteer");
 
 // main process กับ renderer process
-
-listenIPCRenderer("test-sync").subscribe(([event, arg]) => {
-  event.returnValue = "sync pong";
-});
-
-listenIPCRenderer("gold")
-  .pipe(
-    filter(([event, arg]) => arg === "get-gold"),
-    switchMap(([event, arg]) => {
-      return pptGetGoldTrader().pipe(
-        tap((gold) => {
-          event.sender.send("res-gold", gold);
-        })
-      );
-    })
-  )
-  .subscribe();
 
 const onAppReady = fromNodeEvent(app, "ready").pipe(share());
 const onAppWindowAllClosed = fromNodeEvent(app, "window-all-closed").pipe(
@@ -37,21 +33,13 @@ const onAppActivate = onAppReady.pipe(
   share()
 );
 
-// onAppReady.subscribe(() => {
-//   setTimeout(() => {
-//     dialogOpenFile().subscribe((value) => {
-//       console.log("dialog", value);
-//     });
-//   }, 1000);
-// });
-
 const onAppActivateNoWindows = onAppActivate.pipe(
   filter(() => BrowserWindow.getAllWindows().length === 0),
   share()
 );
 
-const onWinLoad = merge(onAppActivateNoWindows, onAppReady).pipe(
-  switchMap(async () => {
+const onWinLoaded = merge(onAppActivateNoWindows, onAppReady).pipe(
+  switchMap(() => {
     const win = new BrowserWindow({
       width: 800,
       height: 600,
@@ -61,26 +49,72 @@ const onWinLoad = merge(onAppActivateNoWindows, onAppReady).pipe(
       },
     });
 
-    // console.log(win.webContents);
     // win.loadURL("https://github.com");
-    await win.loadFile("index.html");
-    win.webContents.openDevTools();
-    win.setTitle("Boppin'n Code");
-    return win;
+    return from(win.loadFile("index.html")).pipe(
+      switchMap(() => {
+        win.webContents.openDevTools();
+        win.setTitle("Yo file replacer");
+        return fromNodeEvent(win, "ready-to-show");
+      }),
+      map(() => win)
+    );
   }),
   share()
 );
 
-const onWinMinimize = onWinLoad.pipe(
+const onWinMinimize = onWinLoaded.pipe(
   switchMap((win) => {
     return fromNodeEvent(win, "minimize");
   }),
   share()
 );
 
-onWinMinimize.subscribe(() => {
-  console.log("minimize");
-});
+const choosenDirectory$ = connectable(
+  onWinLoaded.pipe(
+    switchMap(() =>
+      ipcMain.listenIPCRenderer("onChooseDirectory").pipe(
+        switchMap(([event, arg]) => {
+          return dialog
+            .dialogOpenFile({
+              title: "select the directory",
+              buttonLabel: "choose",
+              properties: ["openDirectory", "multiSelections"],
+            })
+            .pipe(
+              tap((directories) => {
+                event.sender.send("onDirectoryChoosen", directories);
+              })
+            );
+        })
+      )
+    )
+  ),
+  {
+    connector: () => new ReplaySubject(1),
+    resetOnDisconnect: false,
+  }
+);
+choosenDirectory$.connect();
+
+onWinLoaded
+  .pipe(
+    switchMap(() =>
+      ipcMain.listenIPCRenderer("submitDirectory").pipe(
+        map(([event, arg]) => {
+          return arg;
+        }),
+        withLatestFrom(choosenDirectory$),
+        tap(([arg, directories]) => {
+          console.log(arg, directories);
+        })
+      )
+    )
+  )
+  .subscribe();
+
+// onWinMinimize.subscribe(() => {
+//   console.log("minimize");
+// });
 
 // onAppReady
 //   .pipe(switchMap(() => listenShortcutKey("CommandOrControl+X")))
