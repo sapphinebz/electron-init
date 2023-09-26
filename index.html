@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
+    <!-- <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
-    />
+    /> -->
     <title>Hello World!</title>
     <script src="./renderer.js"></script>
   </head>
@@ -24,6 +24,19 @@
         <button id="fetch-gold-btn">fetch gold</button>
       </div>
       <div id="gold-price-container"></div>
+    </div>
+    <div>
+      <h3>Air Quality</h3>
+      <div>
+        <button id="fetch-air-quality-btn">fetch air quality</button>
+      </div>
+      <template id="air-quality-template">
+        <div>
+          <div data-image></div>
+        </div>
+        <div data-content></div>
+      </template>
+      <div data-air-quality-container></div>
     </div>
   </body>
 </html>

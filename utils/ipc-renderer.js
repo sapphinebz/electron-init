@@ -6,7 +6,7 @@ const { fromEventPattern } = require("rxjs");
  * @param {string} message
  * @returns any
  */
-function sendSyncMessage(channel, message) {
+function sendSyncToIPCMain(channel, message) {
   const syncback = ipcRenderer.sendSync(channel, message);
   return syncback;
 }
@@ -16,7 +16,7 @@ function sendSyncMessage(channel, message) {
  * @param {string} eventName
  * @returns Observable
  */
-function fromAsyncReply(eventName) {
+function listenIPCMain(eventName) {
   return fromEventPattern(
     (handler) => {
       ipcRenderer.on(eventName, handler);
@@ -33,12 +33,12 @@ function fromAsyncReply(eventName) {
  * @param {string} message
  */
 
-function sendAsyncMessage(channel, message) {
+function sendToIPCMain(channel, message = "") {
   ipcRenderer.send(channel, message);
 }
 
 module.exports = {
-  sendSyncMessage,
-  fromAsyncReply,
-  sendAsyncMessage,
+  sendSyncToIPCMain,
+  listenIPCMain,
+  sendToIPCMain,
 };

@@ -1,7 +1,7 @@
 const { Observable } = require("rxjs");
 const puppeteer = require("puppeteer");
 
-function pptGetGoldTrader() {
+function getGoldTrader() {
   return new Observable((subscriber) => {
     async function run() {
       try {
@@ -56,4 +56,43 @@ function pptGetGoldTrader() {
   });
 }
 
-module.exports = { pptGetGoldTrader };
+const TERD_THAI_STATION_PATH = `/bangkok/terd-thai`;
+const SOMDUL_AGROFORESTRY_HOME_STATION_PATH = `/samut-songkhram/bang-khon-thi/somdul-agroforestry-home`;
+
+function getAirQuality(stationPath, country = "/thailand") {
+  return new Observable((subscriber) => {
+    async function run() {
+      try {
+        const browser = await puppeteer.launch({
+          headless: "new",
+        });
+        subscriber.add(() => browser.close());
+
+        const page = await browser.newPage();
+        await page.goto(`https://www.iqair.com/th-en${country}${stationPath}`);
+        const aqi = await page.$eval(".aqi-value", (el) =>
+          Array.from(el.children).map((p) => p.textContent)
+        );
+
+        const src = await page.$eval(".aqi__icon", (image) => image.src);
+
+        // [' US AQI ', '12']
+        subscriber.next({
+          imageSrc: src,
+          value: aqi,
+        });
+        subscriber.complete();
+      } catch (err) {
+        subscriber.error(err);
+      }
+    }
+    run();
+  });
+}
+
+module.exports = {
+  getGoldTrader,
+  pptGetTerdThaiAirQuality: () => getAirQuality(TERD_THAI_STATION_PATH),
+  pptGetSomdulAgroforestryHomeAirQuality: () =>
+    getAirQuality(SOMDUL_AGROFORESTRY_HOME_STATION_PATH),
+};

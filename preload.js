@@ -1,10 +1,6 @@
 const { fromEvent, EMPTY, Observable } = require("rxjs");
 const { share, switchMap } = require("rxjs/operators");
-const {
-  sendSyncMessage,
-  fromAsyncReply,
-  sendAsyncMessage,
-} = require("./utils/ipc-renderer");
+const ipcRenderer = require("./utils/ipc-renderer");
 const { contextBridge } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -25,15 +21,31 @@ onDOMContentLoaded.subscribe(() => {
 });
 
 fromElementEvent("#fetch-gold-btn", "click").subscribe(() => {
-  sendAsyncMessage("gold", "get-gold");
+  ipcRenderer.sendToIPCMain("onGetGold");
 });
-fromAsyncReply("res-gold").subscribe(([event, arg]) => {
+ipcRenderer.listenIPCMain("onResultGold").subscribe(([event, arg]) => {
   const container = document.querySelector("#gold-price-container");
   container.innerText = JSON.stringify(arg);
 });
 
+fromElementEvent("#fetch-air-quality-btn", "click").subscribe(() => {
+  ipcRenderer.sendToIPCMain("onGetAirQuality");
+});
+ipcRenderer.listenIPCMain("onResultAirQuality").subscribe(([event, arg]) => {
+  const container = document.querySelector("[data-air-quality-container]");
+  container.innerHTML = "";
+  const template = document.querySelector("#air-quality-template");
+  const fragment = template.content.cloneNode(true);
+  const image = document.createElement("img");
+  image.src = arg.imageSrc;
+  image.alt = "image status";
+  fragment.querySelector("[data-image]").appendChild(image);
+  fragment.querySelector("[data-content]").innerText = arg.value.join(":");
+  container.appendChild(fragment);
+});
+
 fromElementEvent("#button", "click").subscribe(() => {
-  console.log(sendSyncMessage("test-sync", "sync ping"));
+  console.log(ipcRenderer.sendSyncToIPCMain("test-sync", "sync ping"));
 });
 
 function fromElementEvent(selector, eventName) {
