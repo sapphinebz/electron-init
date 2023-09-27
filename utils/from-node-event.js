@@ -12,5 +12,17 @@ function fromNodeEvent(app, eventName) {
     return () => app.off(eventName, handler);
   });
 }
+/**
+ *
+ * @param {NodeStyleEventEmitter} app
+ * @param {string} eventName
+ * @returns Promise
+ */
+function fromNodeEventPromise(app, eventName) {
+  return new Promise((resolve, reject) => {
+    const handler = (event) => resolve(event);
+    app.once(eventName, handler);
+  });
+}
 
-module.exports = { fromNodeEvent };
+module.exports = { fromNodeEvent, fromNodeEventPromise };
