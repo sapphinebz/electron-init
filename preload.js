@@ -28,9 +28,7 @@ ipcRenderer.listenIPCMain("onResultGold").subscribe(([event, arg]) => {
   container.innerText = JSON.stringify(arg);
 });
 
-fromElementEvent("#fetch-air-quality-btn", "click").subscribe(() => {
-  ipcRenderer.sendToIPCMain("onGetAirQuality");
-});
+ipcRenderer.sendToIPCMain("onGetAirQuality");
 ipcRenderer.listenIPCMain("onResultAirQuality").subscribe(([event, arg]) => {
   const container = document.querySelector("[data-air-quality-container]");
   container.innerHTML = "";
