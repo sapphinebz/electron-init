@@ -1,11 +1,24 @@
 const { app, BrowserWindow } = require("electron");
-const { merge } = require("rxjs");
+const { merge, from } = require("rxjs");
 const path = require("node:path");
-const { share, switchMap, tap, filter, exhaustMap } = require("rxjs/operators");
-const { fromNodeEvent } = require("./utils/from-node-event");
+const {
+  share,
+  switchMap,
+  tap,
+  filter,
+  exhaustMap,
+  map,
+} = require("rxjs/operators");
+const {
+  fromNodeEvent,
+  fromNodeEventPromise,
+} = require("./utils/from-node-event");
 // const { listenShortcutKey } = require("./utils/shortcut-key");
 const ipcMain = require("./utils/ipc-main");
 const ppt = require("./utils/puppeteer");
+const net = require("./utils/net");
+const dialog = require("./utils/dialog");
+// const powerMonitor = require("./utils/power-monitor");
 // const { dialogOpenFile } = require("./utils/dialog");
 
 // main process กับ renderer process
@@ -28,14 +41,10 @@ ipcMain
   .subscribe();
 
 ipcMain
-  .listenIPCRenderer("onGetAirQuality")
+  .listenIPCRenderer("onOpenFile")
   .pipe(
-    exhaustMap(([event, arg]) => {
-      return ppt.pptGetTerdThaiAirQuality().pipe(
-        tap((value) => {
-          event.sender.send("onResultAirQuality", value);
-        })
-      );
+    switchMap(([event, arg]) => {
+      return dialog.dialogReadFile().pipe(tap((value) => console.log(value)));
     })
   )
   .subscribe();
@@ -55,7 +64,7 @@ const onAppActivateNoWindows = onAppActivate.pipe(
   share()
 );
 
-const onWinLoad = merge(onAppActivateNoWindows, onAppReady).pipe(
+const onWinReady = merge(onAppActivateNoWindows, onAppReady).pipe(
   switchMap(async () => {
     const win = new BrowserWindow({
       width: 800,
@@ -63,6 +72,7 @@ const onWinLoad = merge(onAppActivateNoWindows, onAppReady).pipe(
       webPreferences: {
         preload: path.join(__dirname, "preload.js"),
         nodeIntegration: true,
+        contextIsolation: true,
       },
     });
 
@@ -71,12 +81,41 @@ const onWinLoad = merge(onAppActivateNoWindows, onAppReady).pipe(
     await win.loadFile("index.html");
     win.webContents.openDevTools();
     win.setTitle("Boppin'n Code");
+    await fromNodeEventPromise(win, "ready-to-show");
     return win;
   }),
   share()
 );
 
-const onWinMinimize = onWinLoad.pipe(
+const sendResultAirQuality = (win) =>
+  switchMap((arg) => {
+    return net.nodeHttps(arg.imageSrc).pipe(
+      tap((chunks) => {
+        win.webContents.send("onResultAirQuality", {
+          ...arg,
+          imageSVG: chunks.toString(),
+        });
+      })
+    );
+  });
+
+onWinReady
+  .pipe(
+    exhaustMap((win) => {
+      const station1 = ppt
+        .pptGetThonBuri_RojjirapaKindergarten()
+        .pipe(sendResultAirQuality(win));
+
+      const station2 = ppt
+        .pptGetSomdulAgroforestryHomeAirQuality()
+        .pipe(sendResultAirQuality(win));
+
+      return merge(station1, station2);
+    })
+  )
+  .subscribe();
+
+const onWinMinimize = onWinReady.pipe(
   switchMap((win) => {
     return fromNodeEvent(win, "minimize");
   }),

@@ -20,6 +20,10 @@ onDOMContentLoaded.subscribe(() => {
   }
 });
 
+fromElementEvent("#open-file-btn", "click").subscribe(() => {
+  ipcRenderer.sendToIPCMain("onOpenFile");
+});
+
 fromElementEvent("#fetch-gold-btn", "click").subscribe(() => {
   ipcRenderer.sendToIPCMain("onGetGold");
 });
@@ -28,18 +32,22 @@ ipcRenderer.listenIPCMain("onResultGold").subscribe(([event, arg]) => {
   container.innerText = JSON.stringify(arg);
 });
 
-ipcRenderer.sendToIPCMain("onGetAirQuality");
+// ipcRenderer.sendToIPCMain("onGetAirQuality");
 ipcRenderer.listenIPCMain("onResultAirQuality").subscribe(([event, arg]) => {
-  const container = document.querySelector("[data-air-quality-container]");
-  container.innerHTML = "";
+  // console.log(arg);
+  const viewEl = document.querySelector("[data-air-quality-view]");
+  // viewEl.innerHTML = "";
   const template = document.querySelector("#air-quality-template");
   const fragment = template.content.cloneNode(true);
-  const image = document.createElement("img");
-  image.src = arg.imageSrc;
-  image.alt = "image status";
-  fragment.querySelector("[data-image]").appendChild(image);
-  fragment.querySelector("[data-content]").innerText = arg.value.join(":");
-  container.appendChild(fragment);
+  const container = fragment.querySelector("[data-air-quality-container]");
+  const stationEl = fragment.querySelector("[data-station-name]");
+  container.style.backgroundColor = arg.bgColor;
+  container.style.color = "#fff";
+  stationEl.innerText = arg.stationName;
+
+  fragment.querySelector("[data-image]").innerHTML = arg.imageSVG;
+  fragment.querySelector("[data-content]").innerText = arg.value.join(" ");
+  viewEl.appendChild(fragment);
 });
 
 fromElementEvent("#button", "click").subscribe(() => {
