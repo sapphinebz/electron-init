@@ -57,6 +57,8 @@ function getGoldTrader() {
 }
 
 const TERD_THAI_STATION_PATH = `/bangkok/terd-thai`;
+const THON_BURI__ROJJIRAPA_KINDERGARTEN = `/bangkok/thon-buri/rojjirapa-kindergarten`;
+
 const SOMDUL_AGROFORESTRY_HOME_STATION_PATH = `/samut-songkhram/bang-khon-thi/somdul-agroforestry-home`;
 
 function getAirQuality(stationPath, country = "/thailand") {
@@ -69,9 +71,19 @@ function getAirQuality(stationPath, country = "/thailand") {
         subscriber.add(() => browser.close());
 
         const page = await browser.newPage();
-        await page.goto(`https://www.iqair.com/th-en${country}${stationPath}`);
+        const url = `https://www.iqair.com/th-en${country}${stationPath}`;
+        await page.goto(url);
         const aqi = await page.$eval(".aqi-value", (el) =>
           Array.from(el.children).map((p) => p.textContent)
+        );
+
+        const bgColor = await page.$eval(".aqi-box-green.aqi-value", (el) => {
+          return getComputedStyle(el).backgroundColor;
+        });
+
+        const stationName = await page.$eval(
+          "app-page-title > h1",
+          (el) => el.innerText
         );
 
         const src = await page.$eval(".aqi__icon", (image) => image.src);
@@ -80,6 +92,9 @@ function getAirQuality(stationPath, country = "/thailand") {
         subscriber.next({
           imageSrc: src,
           value: aqi,
+          url,
+          bgColor,
+          stationName,
         });
         subscriber.complete();
       } catch (err) {
@@ -93,6 +108,8 @@ function getAirQuality(stationPath, country = "/thailand") {
 module.exports = {
   getGoldTrader,
   pptGetTerdThaiAirQuality: () => getAirQuality(TERD_THAI_STATION_PATH),
+  pptGetThonBuri_RojjirapaKindergarten: () =>
+    getAirQuality(THON_BURI__ROJJIRAPA_KINDERGARTEN),
   pptGetSomdulAgroforestryHomeAirQuality: () =>
     getAirQuality(SOMDUL_AGROFORESTRY_HOME_STATION_PATH),
 };
