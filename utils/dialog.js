@@ -2,12 +2,12 @@ const { from } = require("rxjs");
 const { dialog } = require("electron");
 const fs = require("node:fs/promises");
 
-async function handleFileOpen() {
-  const { canceled, filePaths } = await dialog.showOpenDialog();
+async function handleFileOpen(options) {
+  const { canceled, filePaths } = await dialog.showOpenDialog(options);
   if (!canceled) {
-    return filePaths[0];
+    return filePaths;
   }
-  return "";
+  return [];
 }
 
 async function handleImageOpen() {
@@ -23,7 +23,40 @@ async function handleImageOpen() {
   return file.toString("base64");
 }
 
+async function handleReadFile() {
+  const paths = await handleFileOpen({
+    properties: ["openFile"],
+    buttonLabel: "Unveil",
+    title: "Open Document",
+    filters: [
+      // {
+      //   name: "Markdown Files",
+      //   extensions: ["md", "mdown", "markdown", "marcdown"],
+      // },
+      // {
+      //   name: "Text Files",
+      //   extensions: ["txt", "text"],
+      // },
+      {
+        name: "Javascript Files",
+        extensions: ["js", "script"],
+      },
+    ],
+  });
+
+  if (paths.length > 0) {
+    const path = paths[0];
+    const content = await fs.readFile(path);
+    return {
+      path,
+      content: content.toString(),
+    };
+  }
+  return null;
+}
+
 module.exports = {
-  dialogOpenFile: () => from(handleFileOpen()),
+  dialogOpenFile: (options = {}) => from(handleFileOpen(options)),
   dialogOpenImage: () => from(handleImageOpen()),
+  dialogReadFile: () => from(handleReadFile()),
 };
