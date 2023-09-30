@@ -8,7 +8,8 @@
       content="default-src 'self'; script-src 'self'"
     />
     <title>Hello World!</title>
-    <script src="./renderer.js"></script>
+    <script src="./unpkg.com_rxjs@7.8.1_dist_bundles_rxjs.umd.min.js"></script>
+    <script type="module" src="./renderer.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -20,26 +21,10 @@
       <button id="button">submit</button>
     </div>
     <div>
-      <button id="open-file-btn">openFile</button>
+      <button id="robotBtn">robot</button>
     </div>
     <div>
-      <h3>Gold Price</h3>
-      <div>
-        <button id="fetch-gold-btn">fetch gold</button>
-      </div>
-      <div id="gold-price-container"></div>
-    </div>
-    <div>
-      <template id="air-quality-template">
-        <h3 data-station-name></h3>
-        <div data-air-quality-container>
-          <div>
-            <div data-image></div>
-          </div>
-          <div data-content></div>
-        </div>
-      </template>
-      <div data-air-quality-view></div>
+      <button id="requestDeviceBtn">requestDevice</button>
     </div>
   </body>
 </html>

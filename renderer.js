@@ -1,39 +1,44 @@
-// const { ipcRenderer } = require("electron");
-// // console.log("renderer", ipcRenderer);
+const { fromEvent, EMPTY, from } = rxjs;
+const { share, switchMap, exhaustMap } = rxjs.operators;
+const { mockInterval, callRobot } = window.electronAPI;
 
-// window.electronAPI.setTitle(title);
-console.log("renderer", window.electronAPI);
+const onDOMContentLoaded = fromEvent(window, "DOMContentLoaded").pipe(share());
 
-// loadScript("https://unpkg.com/rxjs@^7/dist/bundles/rxjs.umd.min.js", () => {
-//   // const { fromEvent } = rxjs;
-//   // fromEvent()
-//   console.log("loaded script");
-// });
+fromElementEvent("#robotBtn", "click").subscribe((event) => {
+  callRobot();
+});
 
-// /**
-//  *
-//  * @param {string} url
-//  * @param {()=>void} callback
-//  */
-// function loadScript(src, callback) {
-//   const scriptEl = document.createElement("script");
-//   scriptEl.async = true;
-//   scriptEl.src = src;
-//   const controller = new AbortController();
-//   scriptEl.addEventListener(
-//     "load",
-//     () => {
-//       callback();
-//       controller.abort();
-//     },
-//     { signal: controller.signal }
-//   );
+fromElementEvent("#requestDeviceBtn", "click")
+  .pipe(
+    exhaustMap(() => {
+      return requestDevices([
+        {
+          usagePage: 0xff60,
+          usage: 0x61,
+        },
+      ]);
+    })
+  )
+  .subscribe((event) => {
+    console.log(event);
+  });
 
-//   scriptEl.addEventListener(
-//     "error",
-//     () => {
-//       controller.abort();
-//     },
-//     { signal: controller.signal }
-//   );
-// }
+function fromElementEvent(selector, eventName) {
+  return onDOMContentLoaded.pipe(
+    switchMap(() => {
+      const el = document.querySelector(selector);
+      if (el) {
+        return fromEvent(el, eventName);
+      }
+      return EMPTY;
+    })
+  );
+}
+
+function requestDevices(filters) {
+  return from(
+    navigator.hid.requestDevice({
+      filters,
+    })
+  );
+}

@@ -1,5 +1,12 @@
 const { app, BrowserWindow } = require("electron");
-const { merge, from } = require("rxjs");
+const {
+  merge,
+  from,
+  Observable,
+  timer,
+  fromEventPattern,
+  connectable,
+} = require("rxjs");
 const path = require("node:path");
 const {
   share,
@@ -8,46 +15,48 @@ const {
   filter,
   exhaustMap,
   map,
+  takeUntil,
 } = require("rxjs/operators");
 const {
   fromNodeEvent,
   fromNodeEventPromise,
 } = require("./utils/from-node-event");
-// const { listenShortcutKey } = require("./utils/shortcut-key");
+const shortcutKey = require("./utils/shortcut-key");
 const ipcMain = require("./utils/ipc-main");
 const ppt = require("./utils/puppeteer");
 const net = require("./utils/net");
 const dialog = require("./utils/dialog");
+const childProcess = require("./utils/child-process");
 // const powerMonitor = require("./utils/power-monitor");
 // const { dialogOpenFile } = require("./utils/dialog");
 
 // main process กับ renderer process
 
-ipcMain.listenIPCRenderer("test-sync").subscribe(([event, arg]) => {
-  event.returnValue = "sync pong";
-});
+// ipcMain.listenIPCRenderer("test-sync").subscribe(([event, arg]) => {
+//   event.returnValue = "sync pong";
+// });
 
-ipcMain
-  .listenIPCRenderer("onGetGold")
-  .pipe(
-    switchMap(([event, arg]) => {
-      return ppt.getGoldTrader().pipe(
-        tap((value) => {
-          event.sender.send("onResultGold", value);
-        })
-      );
-    })
-  )
-  .subscribe();
+// ipcMain
+//   .listenIPCRenderer("onGetGold")
+//   .pipe(
+//     switchMap(([event, arg]) => {
+//       return ppt.getGoldTrader().pipe(
+//         tap((value) => {
+//           event.sender.send("onResultGold", value);
+//         })
+//       );
+//     })
+//   )
+//   .subscribe();
 
-ipcMain
-  .listenIPCRenderer("onOpenFile")
-  .pipe(
-    switchMap(([event, arg]) => {
-      return dialog.dialogReadFile().pipe(tap((value) => console.log(value)));
-    })
-  )
-  .subscribe();
+// ipcMain
+//   .listenIPCRenderer("onOpenFile")
+//   .pipe(
+//     switchMap(([event, arg]) => {
+//       return dialog.dialogReadFile().pipe(tap((value) => console.log(value)));
+//     })
+//   )
+//   .subscribe();
 
 const onAppReady = fromNodeEvent(app, "ready").pipe(share());
 const onAppWindowAllClosed = fromNodeEvent(app, "window-all-closed").pipe(
@@ -71,7 +80,7 @@ const onWinReady = merge(onAppActivateNoWindows, onAppReady).pipe(
       height: 600,
       webPreferences: {
         preload: path.join(__dirname, "preload.js"),
-        nodeIntegration: true,
+        nodeIntegration: false,
         contextIsolation: true,
       },
     });
@@ -81,39 +90,64 @@ const onWinReady = merge(onAppActivateNoWindows, onAppReady).pipe(
     await win.loadFile("index.html");
     win.webContents.openDevTools();
     win.setTitle("Boppin'n Code");
-    await fromNodeEventPromise(win, "ready-to-show");
+
+    // await fromNodeEventPromise(win, "ready-to-show");
+    // console.log("ready-to-show");
     return win;
   }),
   share()
 );
 
-const sendResultAirQuality = (win) =>
-  switchMap((arg) => {
-    return net.nodeHttps(arg.imageSrc).pipe(
-      tap((chunks) => {
-        win.webContents.send("onResultAirQuality", {
-          ...arg,
-          imageSVG: chunks.toString(),
-        });
-      })
-    );
-  });
-
 onWinReady
   .pipe(
-    exhaustMap((win) => {
-      const station1 = ppt
-        .pptGetThonBuri_RojjirapaKindergarten()
-        .pipe(sendResultAirQuality(win));
-
-      const station2 = ppt
-        .pptGetSomdulAgroforestryHomeAirQuality()
-        .pipe(sendResultAirQuality(win));
-
-      return merge(station1, station2);
-    })
+    switchMap(() =>
+      ipcMain.listenIPCRenderer("robot").pipe(
+        switchMap(() => {
+          const workerPath = path.join(__dirname, "child-robot.js");
+          const childRobot = childProcess.createFork(workerPath);
+          return fromEventPattern(
+            () => {
+              childRobot.send("Hello from port1");
+            },
+            () => {
+              childRobot.kill();
+            }
+          ).pipe(
+            takeUntil(shortcutKey.listenShortcutKey("CommandOrControl+X"))
+          );
+        })
+      )
+    )
   )
   .subscribe();
+
+// const sendResultAirQuality = (win) =>
+//   switchMap((arg) => {
+//     return net.nodeHttps(arg.imageSrc).pipe(
+//       tap((chunks) => {
+//         win.webContents.send("onResultAirQuality", {
+//           ...arg,
+//           imageSVG: chunks.toString(),
+//         });
+//       })
+//     );
+//   });
+
+// onWinReady
+//   .pipe(
+//     exhaustMap((win) => {
+//       const station1 = ppt
+//         .pptGetThonBuri_RojjirapaKindergarten()
+//         .pipe(sendResultAirQuality(win));
+
+//       const station2 = ppt
+//         .pptGetSomdulAgroforestryHomeAirQuality()
+//         .pipe(sendResultAirQuality(win));
+
+//       return merge(station1, station2);
+//     })
+//   )
+//   .subscribe();
 
 const onWinMinimize = onWinReady.pipe(
   switchMap((win) => {

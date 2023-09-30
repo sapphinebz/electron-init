@@ -9,7 +9,9 @@ function listenShortcutKey(shortcutKey) {
     });
 
     if (!ret) {
-      console.log("ลงทะเบียน global shortcut ล้มเหลว");
+      const error = "ลงทะเบียน global shortcut ล้มเหลว";
+      console.log(error);
+      subscriber.error(error);
     }
 
     return () => {
