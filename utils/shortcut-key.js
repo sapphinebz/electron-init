@@ -3,22 +3,24 @@ const { globalShortcut } = require("electron");
 
 function listenShortcutKey(shortcutKey) {
   return new Observable((subscriber) => {
-    // ลงทะเบียน globalShortcut
-    const ret = globalShortcut.register(shortcutKey, () => {
-      subscriber.next(shortcutKey);
-    });
+    if (!globalShortcut.isRegistered(shortcutKey)) {
+      // ลงทะเบียน globalShortcut
+      const ret = globalShortcut.register(shortcutKey, () => {
+        subscriber.next(shortcutKey);
+      });
 
-    if (!ret) {
-      const error = "ลงทะเบียน global shortcut ล้มเหลว";
-      console.log(error);
-      subscriber.error(error);
-    }
-
-    return () => {
-      if (globalShortcut.isRegistered(shortcutKey)) {
-        globalShortcut.unregister(shortcutKey);
+      if (!ret) {
+        const error = "ลงทะเบียน global shortcut ล้มเหลว";
+        console.log(error);
+        subscriber.error(error);
+      } else {
+        subscriber.add(() => {
+          if (globalShortcut.isRegistered(shortcutKey)) {
+            globalShortcut.unregister(shortcutKey);
+          }
+        });
       }
-    };
+    }
   });
 }
 

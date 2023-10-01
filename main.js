@@ -98,25 +98,33 @@ const onWinReady = merge(onAppActivateNoWindows, onAppReady).pipe(
   share()
 );
 
+const keyCommandX = shortcutKey.listenShortcutKey("CommandOrControl+X");
+
+const runRobotChildProcess = switchMap(() => {
+  const workerPath = path.join(__dirname, "child-robot.js");
+  const childRobot = childProcess.createFork(workerPath);
+  return fromEventPattern(
+    () => {
+      childRobot.send("Hello from port1");
+    },
+    () => {
+      childRobot.kill();
+    }
+  ).pipe(takeUntil(keyCommandX));
+});
+
+onAppReady
+  .pipe(
+    switchMap(() =>
+      shortcutKey.listenShortcutKey("]").pipe(runRobotChildProcess)
+    )
+  )
+  .subscribe();
+
 onWinReady
   .pipe(
     switchMap(() =>
-      ipcMain.listenIPCRenderer("robot").pipe(
-        switchMap(() => {
-          const workerPath = path.join(__dirname, "child-robot.js");
-          const childRobot = childProcess.createFork(workerPath);
-          return fromEventPattern(
-            () => {
-              childRobot.send("Hello from port1");
-            },
-            () => {
-              childRobot.kill();
-            }
-          ).pipe(
-            takeUntil(shortcutKey.listenShortcutKey("CommandOrControl+X"))
-          );
-        })
-      )
+      ipcMain.listenIPCRenderer("robot").pipe(runRobotChildProcess)
     )
   )
   .subscribe();
