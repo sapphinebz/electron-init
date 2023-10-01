@@ -1,11 +1,11 @@
-const { utilityProcess, MessageChannelMain } = require("electron");
-const { fromEventPattern, bindCallback, Observable } = require("rxjs");
-const { switchMap } = require("rxjs/operators");
+import { utilityProcess, MessageChannelMain, MessageEvent } from "electron";
+import { fromEventPattern, bindCallback, Observable } from "rxjs";
+import { switchMap } from "rxjs/operators";
 /**
  *
  * @param {string} filePath
  */
-function createFork(filePath) {
+export function createFork(filePath: string) {
   const { port1, port2 } = new MessageChannelMain();
   const child = utilityProcess.fork(filePath);
   child.postMessage("Hi there!", [port2]);
@@ -25,24 +25,27 @@ function createFork(filePath) {
     kill: () => {
       child.kill();
     },
-    send: (msg) => {
+    send: (msg: string) => {
       port1.postMessage(msg);
     },
     messagePort,
   };
 }
 
-const fromParentPort = bindCallback((cb) => {
-  process.parentPort.once("message", (e) => {
-    const [port] = e.ports;
-    cb(port);
+export function fromParentPort() {
+  return new Observable<Electron.MessagePortMain>((subscriber) => {
+    process.parentPort.once("message", (messageEvent) => {
+      const [port] = messageEvent.ports;
+      subscriber.next(port);
+      subscriber.complete();
+    });
   });
-});
+}
 
-function fromPortMessage() {
+export function fromPortMessage<T = any>() {
   return fromParentPort().pipe(
     switchMap((port) => {
-      return fromEventPattern(
+      return fromEventPattern<T>(
         (handler) => {
           port.on("message", handler);
           port.start();
@@ -56,13 +59,11 @@ function fromPortMessage() {
   );
 }
 
-function onProcessExit() {
-  return new Observable((subscriber) => {
+export function onProcessExit() {
+  return new Observable<void>((subscriber) => {
     process.on("exit", () => {
       subscriber.next();
       subscriber.complete();
     });
   });
 }
-
-module.exports = { createFork, fromParentPort, fromPortMessage, onProcessExit };

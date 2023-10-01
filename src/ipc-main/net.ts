@@ -1,7 +1,7 @@
-const { net } = require("electron");
-const { Observable } = require("rxjs");
-const { map } = require("rxjs/operators");
-const https = require("https");
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
+import https from "node:https";
+import { net } from "electron";
 
 /**
  * Automatic management of system proxy configuration, support of the wpad protocol and proxy pac configuration files.
@@ -11,7 +11,7 @@ const https = require("https");
  * @param {string} url
  * @returns Observable
  */
-function httpGet(url) {
+export function httpGet(url: string) {
   return new Observable((subscriber) => {
     const request = net.request({
       url,
@@ -33,8 +33,8 @@ function httpGet(url) {
   });
 }
 
-function nodeHttps(url) {
-  return new Observable((subscriber) => {
+export function nodeHttps(url: string) {
+  return new Observable<string>((subscriber) => {
     const abortController = new AbortController();
     https
       .get(
@@ -67,7 +67,7 @@ function nodeHttps(url) {
  * @param {string} url
  * @returns Observable<string>
  */
-function httpsImageBase64(url) {
+export function httpsImageBase64(url: string) {
   return nodeHttps(url).pipe(
     map((chunks) => {
       const base64Data = Buffer.from(chunks).toString("base64");
@@ -76,9 +76,3 @@ function httpsImageBase64(url) {
     })
   );
 }
-
-module.exports = {
-  httpGet,
-  nodeHttps,
-  httpsImageBase64,
-};

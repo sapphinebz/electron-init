@@ -1,7 +1,8 @@
-const { Observable, from } = require("rxjs");
-const { switchMap, takeUntil } = require("rxjs/operators");
-const robot = require("robotjs");
-const { fromPortMessage, onProcessExit } = require("./utils/child-process");
+import { Observable, from } from "rxjs";
+import { switchMap, takeUntil } from "rxjs/operators";
+import { fromPortMessage, onProcessExit } from "./ipc-main/child-process";
+
+import * as robot from "robotjs";
 
 fromPortMessage()
   .pipe(
@@ -11,8 +12,8 @@ fromPortMessage()
   )
   .subscribe();
 
-function delay(period) {
-  return new Promise((resolve) => setTimeout(resolve.bind(this), period));
+function delay(period: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve.bind(this), period));
 }
 
 async function runRobot() {

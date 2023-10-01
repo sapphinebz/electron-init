@@ -1,8 +1,27 @@
-const { Observable } = require("rxjs");
-const puppeteer = require("puppeteer");
+import { Observable } from "rxjs";
+import puppeteer from "puppeteer";
 
-function getGoldTrader() {
-  return new Observable((subscriber) => {
+export interface AirQualityScape {
+  imageSrc: string;
+  value: string[];
+  url: string;
+  bgColor: string;
+  stationName: string;
+}
+
+export interface GoldScape {
+  bar: {
+    sell: number;
+    purchase: number;
+  };
+  jewelry: {
+    sell: number;
+    purchase: number;
+  };
+}
+
+export function getGoldTrader() {
+  return new Observable<GoldScape>((subscriber) => {
     async function run() {
       try {
         const browser = await puppeteer.launch({
@@ -13,7 +32,7 @@ function getGoldTrader() {
         const page = await browser.newPage();
         await page.goto(`https://www.goldtraders.or.th/default.aspx`);
         const result = await page.evaluate(() => {
-          const results = [];
+          const results: any[] = [];
 
           const trlist = document.querySelectorAll(
             "#DetailPlace_uc_goldprices1_GoldPricesUpdatePanel tbody tr"
@@ -39,7 +58,7 @@ function getGoldTrader() {
             },
           };
 
-          function toCurreny(value) {
+          function toCurreny(value: string) {
             return parseInt(value.replace(/\,/, ""));
           }
 
@@ -61,8 +80,8 @@ const THON_BURI__ROJJIRAPA_KINDERGARTEN = `/bangkok/thon-buri/rojjirapa-kinderga
 
 const SOMDUL_AGROFORESTRY_HOME_STATION_PATH = `/samut-songkhram/bang-khon-thi/somdul-agroforestry-home`;
 
-function getAirQuality(stationPath, country = "/thailand") {
-  return new Observable((subscriber) => {
+export function getAirQuality(stationPath: string, country = "/thailand") {
+  return new Observable<AirQualityScape>((subscriber) => {
     async function run() {
       try {
         const browser = await puppeteer.launch({
@@ -86,16 +105,20 @@ function getAirQuality(stationPath, country = "/thailand") {
           (el) => el.innerText
         );
 
-        const src = await page.$eval(".aqi__icon", (image) => image.src);
+        const src = await page.$eval(
+          ".aqi__icon",
+          (image: HTMLImageElement) => image.src
+        );
 
         // [' US AQI ', '12']
-        subscriber.next({
+        const objectEmit = {
           imageSrc: src,
           value: aqi,
           url,
           bgColor,
           stationName,
-        });
+        };
+        subscriber.next(objectEmit);
         subscriber.complete();
       } catch (err) {
         subscriber.error(err);
@@ -105,11 +128,9 @@ function getAirQuality(stationPath, country = "/thailand") {
   });
 }
 
-module.exports = {
-  getGoldTrader,
-  pptGetTerdThaiAirQuality: () => getAirQuality(TERD_THAI_STATION_PATH),
-  pptGetThonBuri_RojjirapaKindergarten: () =>
-    getAirQuality(THON_BURI__ROJJIRAPA_KINDERGARTEN),
-  pptGetSomdulAgroforestryHomeAirQuality: () =>
-    getAirQuality(SOMDUL_AGROFORESTRY_HOME_STATION_PATH),
-};
+export const pptGetTerdThaiAirQuality = () =>
+  getAirQuality(TERD_THAI_STATION_PATH);
+export const pptGetThonBuri_RojjirapaKindergarten = () =>
+  getAirQuality(THON_BURI__ROJJIRAPA_KINDERGARTEN);
+export const pptGetSomdulAgroforestryHomeAirQuality = () =>
+  getAirQuality(SOMDUL_AGROFORESTRY_HOME_STATION_PATH);

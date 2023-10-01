@@ -1,8 +1,8 @@
-const { from } = require("rxjs");
-const { dialog } = require("electron");
-const fs = require("node:fs/promises");
+import fs from "node:fs/promises";
+import { dialog } from "electron";
+import { from } from "rxjs";
 
-async function handleFileOpen(options) {
+async function handleFileOpen(options: Electron.OpenDialogOptions) {
   const { canceled, filePaths } = await dialog.showOpenDialog(options);
   if (!canceled) {
     return filePaths;
@@ -55,8 +55,7 @@ async function handleReadFile() {
   return null;
 }
 
-module.exports = {
-  dialogOpenFile: (options = {}) => from(handleFileOpen(options)),
-  dialogOpenImage: () => from(handleImageOpen()),
-  dialogReadFile: () => from(handleReadFile()),
-};
+export const dialogOpenImage = () => from(handleImageOpen());
+export const dialogOpenFile = (options: Electron.OpenDialogOptions = {}) =>
+  from(handleFileOpen(options));
+export const dialogReadFile = () => from(handleReadFile());
