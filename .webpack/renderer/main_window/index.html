@@ -3,10 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <title>Hello World!</title>
-
   <script defer src="/main_window/index.js"></script></head>
   <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application.</p>
+    <section id="directory">
+      <h2>Script Replacement</h2>
+      <div class="row">
+        <button id="chooseDirectoryBtn">choose directory</button>
+      </div>
+      <template id="directory-choosen-template">
+        <div class="font-size-smaller row" data-name></div>
+      </template>
+      <div data-directory-choosen></div>
+      <div class="row">
+        <span> source: </span>
+        <input data-form-control name="source" type="text" id="source-inpt" />
+      </div>
+      <div class="row">
+        <span> replace: </span>
+        <input data-form-control name="replace" type="text" id="replace-inpt" />
+      </div>
+      <div>
+        <button id="submitBtn" disabled>submit</button>
+      </div>
+    </section>
   </body>
 </html>

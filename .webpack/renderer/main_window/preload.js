@@ -283,9 +283,21 @@ eval("/** @typedef {\"info\" | \"warning\" | \"error\"} LogLevel */\n\n/** @type
 /*!************************!*\
   !*** ./src/preload.ts ***!
   \************************/
-/***/ (() => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-eval("// See the Electron documentation for details on how to use preload scripts:\n// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiLi9zcmMvcHJlbG9hZC50cyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIndlYnBhY2s6Ly9lbGVjdHJvbi1pbml0Ly4vc3JjL3ByZWxvYWQudHM/MDU2YSJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSw0RUFBNEU7QUFDNUUsZ0ZBQWdGIiwic291cmNlc0NvbnRlbnQiOlsiLy8gU2VlIHRoZSBFbGVjdHJvbiBkb2N1bWVudGF0aW9uIGZvciBkZXRhaWxzIG9uIGhvdyB0byB1c2UgcHJlbG9hZCBzY3JpcHRzOlxuLy8gaHR0cHM6Ly93d3cuZWxlY3Ryb25qcy5vcmcvZG9jcy9sYXRlc3QvdHV0b3JpYWwvcHJvY2Vzcy1tb2RlbCNwcmVsb2FkLXNjcmlwdHNcbiJdfQ==\n//# sourceURL=webpack-internal:///./src/preload.ts\n");
+"use strict";
+eval("\n// See the Electron documentation for details on how to use preload scripts:\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nconst electron_1 = __webpack_require__(/*! electron */ \"electron\");\n// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts\nelectron_1.contextBridge.exposeInMainWorld(\"electronAPI\", {\n    sendToIPCMain: (eventName, arg) => {\n        return new Promise((resolve) => {\n            electron_1.ipcRenderer.once(eventName, (event, arg) => {\n                resolve(arg);\n            });\n            electron_1.ipcRenderer.send(eventName, arg);\n        });\n    },\n    sendSyncToIPCMain: (eventName, arg) => {\n        return electron_1.ipcRenderer.sendSync(eventName, arg);\n    },\n});\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiLi9zcmMvcHJlbG9hZC50cyIsIm1hcHBpbmdzIjoiO0FBQUEsNEVBQTRFOztBQUU1RSxtRUFBc0Q7QUFJdEQsZ0ZBQWdGO0FBQ2hGLHdCQUFhLENBQUMsaUJBQWlCLENBQUMsYUFBYSxFQUFFO0lBQzdDLGFBQWEsRUFBRSxDQUFDLFNBQWlCLEVBQUUsR0FBUSxFQUFnQixFQUFFO1FBQzNELE9BQU8sSUFBSSxPQUFPLENBQUMsQ0FBQyxPQUFPLEVBQUUsRUFBRTtZQUM3QixzQkFBVyxDQUFDLElBQUksQ0FBQyxTQUFTLEVBQUUsQ0FBQyxLQUFnQyxFQUFFLEdBQUcsRUFBRSxFQUFFO2dCQUNwRSxPQUFPLENBQUMsR0FBRyxDQUFDLENBQUM7WUFDZixDQUFDLENBQUMsQ0FBQztZQUNILHNCQUFXLENBQUMsSUFBSSxDQUFDLFNBQVMsRUFBRSxHQUFHLENBQUMsQ0FBQztRQUNuQyxDQUFDLENBQUMsQ0FBQztJQUNMLENBQUM7SUFFRCxpQkFBaUIsRUFBRSxDQUFDLFNBQWlCLEVBQUUsR0FBUSxFQUFPLEVBQUU7UUFDdEQsT0FBTyxzQkFBVyxDQUFDLFFBQVEsQ0FBQyxTQUFTLEVBQUUsR0FBRyxDQUFDLENBQUM7SUFDOUMsQ0FBQztDQUNGLENBQUMsQ0FBQyIsInNvdXJjZXMiOlsid2VicGFjazovL2VsZWN0cm9uLWluaXQvLi9zcmMvcHJlbG9hZC50cz8wNTZhIl0sInNvdXJjZXNDb250ZW50IjpbIi8vIFNlZSB0aGUgRWxlY3Ryb24gZG9jdW1lbnRhdGlvbiBmb3IgZGV0YWlscyBvbiBob3cgdG8gdXNlIHByZWxvYWQgc2NyaXB0czpcblxuaW1wb3J0IHsgY29udGV4dEJyaWRnZSwgaXBjUmVuZGVyZXIgfSBmcm9tIFwiZWxlY3Ryb25cIjtcbmltcG9ydCB7IE9ic2VydmFibGUsIGZyb21FdmVudCwgc2hhcmVSZXBsYXkgfSBmcm9tIFwicnhqc1wiO1xuaW1wb3J0IHsgbGlzdGVuSVBDTWFpbiB9IGZyb20gXCIuL2lwYy1yZW5kZXJlci9saXN0ZW4taXBjLW1haW5cIjtcblxuLy8gaHR0cHM6Ly93d3cuZWxlY3Ryb25qcy5vcmcvZG9jcy9sYXRlc3QvdHV0b3JpYWwvcHJvY2Vzcy1tb2RlbCNwcmVsb2FkLXNjcmlwdHNcbmNvbnRleHRCcmlkZ2UuZXhwb3NlSW5NYWluV29ybGQoXCJlbGVjdHJvbkFQSVwiLCB7XG4gIHNlbmRUb0lQQ01haW46IChldmVudE5hbWU6IHN0cmluZywgYXJnOiBhbnkpOiBQcm9taXNlPGFueT4gPT4ge1xuICAgIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSkgPT4ge1xuICAgICAgaXBjUmVuZGVyZXIub25jZShldmVudE5hbWUsIChldmVudDogRWxlY3Ryb24uSXBjUmVuZGVyZXJFdmVudCwgYXJnKSA9PiB7XG4gICAgICAgIHJlc29sdmUoYXJnKTtcbiAgICAgIH0pO1xuICAgICAgaXBjUmVuZGVyZXIuc2VuZChldmVudE5hbWUsIGFyZyk7XG4gICAgfSk7XG4gIH0sXG5cbiAgc2VuZFN5bmNUb0lQQ01haW46IChldmVudE5hbWU6IHN0cmluZywgYXJnOiBhbnkpOiBhbnkgPT4ge1xuICAgIHJldHVybiBpcGNSZW5kZXJlci5zZW5kU3luYyhldmVudE5hbWUsIGFyZyk7XG4gIH0sXG59KTtcbiJdLCJuYW1lcyI6W10sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///./src/preload.ts\n");
+
+/***/ }),
+
+/***/ "electron":
+/*!***************************!*\
+  !*** external "electron" ***!
+  \***************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("electron");
 
 /***/ }),
 
@@ -385,7 +397,7 @@ module.exports = require("events");
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("fc61e93c08dd231f32f6")
+/******/ 		__webpack_require__.h = () => ("3544ea8b1fd6bf9b5b08")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
@@ -848,10 +860,6 @@ module.exports = require("events");
 /******/ 	(() => {
 /******/ 		__webpack_require__.p = "/";
 /******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
-/******/ 	if (typeof __webpack_require__ !== 'undefined') __webpack_require__.ab = "/Users/thanaditbuthong/Applications/Electron/electron-init/.webpack/renderer" + "/native_modules/";
 /******/ 	
 /******/ 	/* webpack/runtime/jsonp chunk loading */
 /******/ 	(() => {

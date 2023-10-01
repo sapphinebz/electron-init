@@ -10873,8 +10873,8 @@ const from_app_event_1 = __webpack_require__(/*! ./ipc-main/from-app-event */ ".
 const from_browser_event_1 = __webpack_require__(/*! ./ipc-main/from-browser-event */ "./src/ipc-main/from-browser-event.ts");
 const operators_1 = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/dist/cjs/operators/index.js");
 const rxjs_1 = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/dist/cjs/index.js");
-const child_process_1 = __webpack_require__(/*! ./ipc-main/child-process */ "./src/ipc-main/child-process.ts");
-const listen_shortcut_key_1 = __webpack_require__(/*! ./ipc-main/listen-shortcut-key */ "./src/ipc-main/listen-shortcut-key.ts");
+const listen_ipc_renderer_1 = __webpack_require__(/*! ./ipc-main/listen-ipc-renderer */ "./src/ipc-main/listen-ipc-renderer.ts");
+const dialog_1 = __webpack_require__(/*! ./ipc-main/dialog */ "./src/ipc-main/dialog.ts");
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (__webpack_require__(/*! electron-squirrel-startup */ "./node_modules/electron-squirrel-startup/index.js")) {
     electron_1.app.quit();
@@ -10900,10 +10900,27 @@ const onWinReady = (0, rxjs_1.merge)(onAppActivateNoWindows, onAppReady).pipe((0
     yield win.loadURL('http://localhost:3000/main_window');
     win.webContents.openDevTools();
     win.setTitle("Boppin'n Code");
-    // await fromNodeEventPromise(win, "ready-to-show");
-    // console.log("ready-to-show");
     return win;
-})), (0, operators_1.share)());
+})), (0, operators_1.shareReplay)(1));
+onWinReady
+    .pipe((0, operators_1.switchMap)(() => (0, listen_ipc_renderer_1.listenIPCRenderer)("onChooseDirectory").pipe((0, operators_1.switchMap)(([event, arg]) => {
+    return (0, dialog_1.dialogOpenFile)({
+        title: "select the directory",
+        buttonLabel: "choose",
+        properties: ["openDirectory", "multiSelections"],
+    }).pipe((0, operators_1.tap)((directories) => {
+        event.returnValue = directories;
+    }));
+}))))
+    .subscribe();
+onWinReady
+    .pipe((0, operators_1.switchMap)(() => (0, listen_ipc_renderer_1.listenIPCRenderer)("onSubmitDirectory").pipe((0, operators_1.tap)(([event, formValue]) => {
+    console.log(formValue);
+    setTimeout(() => {
+        event.sender.send("onSubmitDirectory", "success!");
+    }, 2000);
+}))))
+    .subscribe();
 const onWinMinimize = onWinReady.pipe((0, operators_1.switchMap)((win) => {
     return (0, from_browser_event_1.fromBrowserEvent)(win, "minimize");
 }), (0, operators_1.share)());
@@ -10918,25 +10935,28 @@ onAppWindowAllClosed.subscribe(() => {
         electron_1.app.quit();
     }
 });
-const keyCommandX = (0, listen_shortcut_key_1.listenShortcutKey)("CommandOrControl+X");
-const keyStartRobot = (0, listen_shortcut_key_1.listenShortcutKey)("]");
-onAppReady
-    .pipe((0, operators_1.switchMap)(() => keyStartRobot.pipe(runRobotChildProcess())))
-    .subscribe();
+// const keyCommandX = listenShortcutKey("CommandOrControl+X");
+// const keyStartRobot = listenShortcutKey("]");
+// onAppReady
+//   .pipe(switchMap(() => keyStartRobot.pipe(runRobotChildProcess())))
+//   .subscribe();
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-function runRobotChildProcess() {
-    return (0, operators_1.switchMap)(() => {
-        // const workerPath = path.join(__dirname, "child-robot.js");
-        // const childRobot = createFork(workerPath);
-        const childRobot = (0, child_process_1.createFork)("/Users/thanaditbuthong/Applications/Electron/electron-init/dist_utility/utility_process");
-        return (0, rxjs_1.fromEventPattern)(() => {
-            childRobot.send("Hello from port1");
-        }, () => {
-            childRobot.kill();
-        }).pipe((0, operators_1.takeUntil)(keyCommandX));
-    });
-}
+// function runRobotChildProcess() {
+//   return switchMap<any, any>(() => {
+//     // const workerPath = path.join(__dirname, "child-robot.js");
+//     // const childRobot = createFork(workerPath);
+//     const childRobot = createFork(UTILITY_PROCESS_MODULE_PATH);
+//     return fromEventPattern<void>(
+//       () => {
+//         childRobot.send("Hello from port1");
+//       },
+//       () => {
+//         childRobot.kill();
+//       }
+//     ).pipe(takeUntil(keyCommandX));
+//   });
+// }
 // const sendResultAirQuality = (win) =>
 //   switchMap((arg) => {
 //     return net.nodeHttps(arg.imageSrc).pipe(
@@ -10965,76 +10985,91 @@ function runRobotChildProcess() {
 
 /***/ }),
 
-/***/ "./src/ipc-main/child-process.ts":
-/*!***************************************!*\
-  !*** ./src/ipc-main/child-process.ts ***!
-  \***************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./src/ipc-main/dialog.ts":
+/*!********************************!*\
+  !*** ./src/ipc-main/dialog.ts ***!
+  \********************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.onProcessExit = exports.fromPortMessage = exports.fromParentPort = exports.createFork = void 0;
+exports.dialogReadFile = exports.dialogOpenFile = exports.dialogOpenImage = void 0;
+const promises_1 = __importDefault(__webpack_require__(/*! node:fs/promises */ "node:fs/promises"));
 const electron_1 = __webpack_require__(/*! electron */ "electron");
 const rxjs_1 = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/dist/cjs/index.js");
-const operators_1 = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/dist/cjs/operators/index.js");
-/**
- *
- * @param {string} filePath
- */
-function createFork(filePath) {
-    const { port1, port2 } = new electron_1.MessageChannelMain();
-    const child = electron_1.utilityProcess.fork(filePath);
-    child.postMessage("Hi there!", [port2]);
-    const messagePort = (0, rxjs_1.fromEventPattern)((handler) => {
-        port1.on("message", handler);
-        port1.start();
-    }, (handler) => {
-        port1.off("message", handler);
-        port1.close();
-    });
-    return {
-        kill: () => {
-            child.kill();
-        },
-        send: (msg) => {
-            port1.postMessage(msg);
-        },
-        messagePort,
-    };
-}
-exports.createFork = createFork;
-function fromParentPort() {
-    return new rxjs_1.Observable((subscriber) => {
-        process.parentPort.once("message", (messageEvent) => {
-            const [port] = messageEvent.ports;
-            subscriber.next(port);
-            subscriber.complete();
-        });
+function handleFileOpen(options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { canceled, filePaths } = yield electron_1.dialog.showOpenDialog(options);
+        if (!canceled) {
+            return filePaths;
+        }
+        return [];
     });
 }
-exports.fromParentPort = fromParentPort;
-function fromPortMessage() {
-    return fromParentPort().pipe((0, operators_1.switchMap)((port) => {
-        return (0, rxjs_1.fromEventPattern)((handler) => {
-            port.on("message", handler);
-            port.start();
-        }, (handler) => {
-            port.off("message", handler);
-            port.close();
+function handleImageOpen() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { canceled, filePaths, bookmarks } = yield electron_1.dialog.showOpenDialog({
+            properties: ["openFile"],
+            filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg"] }],
         });
-    }));
-}
-exports.fromPortMessage = fromPortMessage;
-function onProcessExit() {
-    return new rxjs_1.Observable((subscriber) => {
-        process.on("exit", () => {
-            subscriber.next();
-            subscriber.complete();
-        });
+        if (!canceled) {
+            return null;
+        }
+        const file = yield promises_1.default.readFile(filePaths[0]);
+        return file.toString("base64");
     });
 }
-exports.onProcessExit = onProcessExit;
+function handleReadFile() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const paths = yield handleFileOpen({
+            properties: ["openFile"],
+            buttonLabel: "Unveil",
+            title: "Open Document",
+            filters: [
+                // {
+                //   name: "Markdown Files",
+                //   extensions: ["md", "mdown", "markdown", "marcdown"],
+                // },
+                // {
+                //   name: "Text Files",
+                //   extensions: ["txt", "text"],
+                // },
+                {
+                    name: "Javascript Files",
+                    extensions: ["js", "script"],
+                },
+            ],
+        });
+        if (paths.length > 0) {
+            const path = paths[0];
+            const content = yield promises_1.default.readFile(path);
+            return {
+                path,
+                content: content.toString(),
+            };
+        }
+        return null;
+    });
+}
+const dialogOpenImage = () => (0, rxjs_1.from)(handleImageOpen());
+exports.dialogOpenImage = dialogOpenImage;
+const dialogOpenFile = (options = {}) => (0, rxjs_1.from)(handleFileOpen(options));
+exports.dialogOpenFile = dialogOpenFile;
+const dialogReadFile = () => (0, rxjs_1.from)(handleReadFile());
+exports.dialogReadFile = dialogReadFile;
 
 
 /***/ }),
@@ -11091,41 +11126,24 @@ exports.fromBrowserEvent = fromBrowserEvent;
 
 /***/ }),
 
-/***/ "./src/ipc-main/listen-shortcut-key.ts":
+/***/ "./src/ipc-main/listen-ipc-renderer.ts":
 /*!*********************************************!*\
-  !*** ./src/ipc-main/listen-shortcut-key.ts ***!
+  !*** ./src/ipc-main/listen-ipc-renderer.ts ***!
   \*********************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.listenShortcutKey = void 0;
-const rxjs_1 = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/dist/cjs/index.js");
+exports.listenIPCRenderer = void 0;
 const electron_1 = __webpack_require__(/*! electron */ "electron");
-function listenShortcutKey(accelerator) {
-    return new rxjs_1.Observable((subscriber) => {
-        if (!electron_1.globalShortcut.isRegistered(accelerator)) {
-            // ลงทะเบียน globalShortcut
-            const ret = electron_1.globalShortcut.register(accelerator, () => {
-                subscriber.next(accelerator);
-            });
-            if (!ret) {
-                const error = "register global shortcut failed";
-                console.log(error);
-                subscriber.error(error);
-            }
-            else {
-                subscriber.add(() => {
-                    if (electron_1.globalShortcut.isRegistered(accelerator)) {
-                        electron_1.globalShortcut.unregister(accelerator);
-                    }
-                });
-            }
-        }
-    });
+const rxjs_1 = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/dist/cjs/index.js");
+function listenIPCRenderer(channel) {
+    return (0, rxjs_1.fromEventPattern)((handler) => {
+        electron_1.ipcMain.on(channel, handler);
+    }, (handler) => electron_1.ipcMain.off(channel, handler));
 }
-exports.listenShortcutKey = listenShortcutKey;
+exports.listenIPCRenderer = listenIPCRenderer;
 
 
 /***/ }),
@@ -11171,6 +11189,17 @@ module.exports = require("fs");
 
 "use strict";
 module.exports = require("net");
+
+/***/ }),
+
+/***/ "node:fs/promises":
+/*!***********************************!*\
+  !*** external "node:fs/promises" ***!
+  \***********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs/promises");
 
 /***/ }),
 
@@ -11232,11 +11261,6 @@ module.exports = require("util");
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
-/******/ 	if (typeof __webpack_require__ !== 'undefined') __webpack_require__.ab = __dirname + "/native_modules/";
 /******/ 	
 /************************************************************************/
 /******/ 	

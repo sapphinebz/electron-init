@@ -26,6 +26,90 @@
  * ```
  */
 
-import './index.css';
+import { EMPTY, combineLatest, fromEvent } from "rxjs";
+import {
+  distinctUntilChanged,
+  exhaustMap,
+  map,
+  share,
+  shareReplay,
+  switchMap,
+  tap,
+  withLatestFrom,
+} from "rxjs/operators";
+import "./index.css";
+import {
+  fromElementEvent,
+  fromInputElement,
+} from "./ipc-renderer/renderer-utils";
+import { cloneTemplate } from "./ipc-renderer/clone-template";
 
-console.log('👋 This message is being logged by "renderer.js", included via webpack');
+const electronAPI = (window as any)["electronAPI"];
+const sendSyncToIPCMain: (eventName: string, arg: any) => any =
+  electronAPI.sendSyncToIPCMain;
+const sendToIPCMain: (eventName: string, arg: any) => Promise<any> =
+  electronAPI.sendToIPCMain;
+
+const onClickChooseDirectory = fromElementEvent(
+  "#chooseDirectoryBtn",
+  "click"
+).pipe(share());
+
+const onChangeSourceInput = fromInputElement("#source-inpt").pipe(share());
+
+const onChangeReplaceInput = fromInputElement("#replace-inpt").pipe(share());
+
+const directoriesChange = onClickChooseDirectory.pipe(
+  map((event) => {
+    const directories: string[] = sendSyncToIPCMain(
+      "onChooseDirectory",
+      "Hello"
+    );
+    const container = document.querySelector("[data-directory-choosen]");
+    container.innerHTML = "";
+    for (const directory of directories) {
+      const fragment = cloneTemplate("#directory-choosen-template");
+      const nameEl = fragment.querySelector<HTMLDivElement>("[data-name]");
+      nameEl.innerText = directory;
+      container.append(fragment);
+    }
+    return directories;
+  }),
+  shareReplay(1)
+);
+
+const onFormChange = combineLatest({
+  source: onChangeSourceInput,
+  replace: onChangeReplaceInput,
+  directories: directoriesChange,
+}).pipe(shareReplay(1));
+
+const validation = onFormChange.pipe(
+  map(({ source, replace, directories }) => {
+    return Boolean(source) && Boolean(replace) && directories.length > 0;
+  }),
+  distinctUntilChanged(),
+  shareReplay(1)
+);
+
+const submitEl = document.querySelector<HTMLButtonElement>("#submitBtn");
+validation.subscribe((valid) => {
+  if (valid) {
+    submitEl.removeAttribute("disabled");
+  } else {
+    submitEl.setAttribute("disabled", "");
+  }
+});
+
+const onClickSubmitForm = fromElementEvent("#submitBtn", "click").pipe(share());
+
+const onSubmitForm = onClickSubmitForm.pipe(
+  withLatestFrom(onFormChange, (_, formValue) => formValue),
+  exhaustMap((formValue) => {
+    return sendToIPCMain("onSubmitDirectory", formValue);
+  })
+);
+
+onSubmitForm.subscribe((response) => {
+  console.log(response);
+});
