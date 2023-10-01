@@ -43,12 +43,20 @@ import {
   fromInputElement,
 } from "./ipc-renderer/renderer-utils";
 import { cloneTemplate } from "./ipc-renderer/clone-template";
+import "./webcomponents/ids-ring-spinner";
+import {
+  IdsRingSpinner,
+  manageSpinner,
+} from "./webcomponents/ids-ring-spinner";
 
 const electronAPI = (window as any)["electronAPI"];
 const sendSyncToIPCMain: (eventName: string, arg: any) => any =
   electronAPI.sendSyncToIPCMain;
 const sendToIPCMain: (eventName: string, arg: any) => Promise<any> =
   electronAPI.sendToIPCMain;
+
+const spinnerEl = document.querySelector<IdsRingSpinner>("ids-ring-spinner");
+const { addTask, doneTask } = manageSpinner(spinnerEl);
 
 const onClickChooseDirectory = fromElementEvent(
   "#chooseDirectoryBtn",
@@ -106,10 +114,12 @@ const onClickSubmitForm = fromElementEvent("#submitBtn", "click").pipe(share());
 const onSubmitForm = onClickSubmitForm.pipe(
   withLatestFrom(onFormChange, (_, formValue) => formValue),
   exhaustMap((formValue) => {
+    addTask();
     return sendToIPCMain("onSubmitDirectory", formValue);
   })
 );
 
 onSubmitForm.subscribe((response) => {
+  doneTask();
   console.log(response);
 });

@@ -14,3 +14,9 @@ body {
 .font-size-smaller {
   font-size: smaller;
 }
+
+ids-ring-spinner {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
