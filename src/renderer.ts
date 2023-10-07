@@ -26,11 +26,20 @@
  * ```
  */
 
-import { EMPTY, combineLatest, fromEvent, fromEventPattern } from "rxjs";
+import {
+  EMPTY,
+  combineLatest,
+  defer,
+  from,
+  fromEvent,
+  fromEventPattern,
+} from "rxjs";
 import {
   distinctUntilChanged,
   exhaustMap,
   map,
+  repeat,
+  retry,
   share,
   shareReplay,
   switchMap,
@@ -61,10 +70,10 @@ const sendToIPCMain: (eventName: string, ...args: any[]) => void =
 const listenIPCMain = <T = any[]>(eventName: string) => {
   return fromEventPattern<T>(
     (handler) => {
-      const td = electronAPI.listenIPCMain(eventName, handler);
-      return td;
+      const cleanup = electronAPI.listenIPCMain(eventName, handler);
+      return cleanup;
     },
-    (handler, td) => td()
+    (handler, cleanup) => cleanup()
   );
 };
 
