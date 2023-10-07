@@ -12,8 +12,8 @@ interface AppEvent {
  */
 export function fromAppEvent(app: Electron.App, eventName: string) {
   return new Observable<AppEvent>((subscriber) => {
-    const handler = (event: AppEvent) => subscriber.next(event);
+    const handler = subscriber.next.bind(subscriber);
     app.on(eventName as any, handler);
-    return () => app.off(eventName, handler);
+    subscriber.add(app.off.bind(app, eventName, handler));
   });
 }
