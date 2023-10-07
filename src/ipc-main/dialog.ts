@@ -23,6 +23,14 @@ async function handleImageOpen() {
   return file.toString("base64");
 }
 
+async function handleSave(options: Electron.SaveDialogOptions) {
+  const { filePath, canceled, bookmark } = await dialog.showSaveDialog(options);
+  if (!canceled) {
+    return { filePath, bookmark };
+  }
+  return null;
+}
+
 async function handleReadFile() {
   const paths = await handleFileOpen({
     properties: ["openFile"],
@@ -59,3 +67,10 @@ export const dialogOpenImage = () => from(handleImageOpen());
 export const dialogOpenFile = (options: Electron.OpenDialogOptions = {}) =>
   from(handleFileOpen(options));
 export const dialogReadFile = () => from(handleReadFile());
+export const dialogOpenSaveFile = () =>
+  from(
+    handleSave({
+      title: "Save File",
+      defaultPath: "/Users/thanaditbuthong/Desktop",
+    })
+  );
