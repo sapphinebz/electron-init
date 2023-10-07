@@ -26,7 +26,7 @@
  * ```
  */
 
-import { EMPTY, combineLatest, fromEvent } from "rxjs";
+import { EMPTY, combineLatest, fromEvent, fromEventPattern } from "rxjs";
 import {
   distinctUntilChanged,
   exhaustMap,
@@ -52,8 +52,21 @@ import {
 const electronAPI = (window as any)["electronAPI"];
 const sendSyncToIPCMain: (eventName: string, arg: any) => any =
   electronAPI.sendSyncToIPCMain;
-const sendToIPCMain: (eventName: string, arg: any) => Promise<any> =
+const sendAsyncToIPCMain: (eventName: string, arg: any) => Promise<any> =
+  electronAPI.sendAsyncToIPCMain;
+
+const sendToIPCMain: (eventName: string, ...args: any[]) => void =
   electronAPI.sendToIPCMain;
+
+const listenIPCMain = <T = any[]>(eventName: string) => {
+  return fromEventPattern<T>(
+    (handler) => {
+      const td = electronAPI.listenIPCMain(eventName, handler);
+      return td;
+    },
+    (handler, td) => td()
+  );
+};
 
 const spinnerEl = document.querySelector<IdsRingSpinner>("ids-ring-spinner");
 const { addTask, doneTask } = manageSpinner(spinnerEl);
@@ -63,16 +76,17 @@ const onClickChooseDirectory = fromElementEvent(
   "click"
 ).pipe(share());
 
+onClickChooseDirectory.subscribe(() => {
+  sendToIPCMain("onChooseDirectory");
+});
+
 const onChangeSourceInput = fromInputElement("#source-inpt").pipe(share());
 
 const onChangeReplaceInput = fromInputElement("#replace-inpt").pipe(share());
 
-const directoriesChange = onClickChooseDirectory.pipe(
-  map((event) => {
-    const directories: string[] = sendSyncToIPCMain(
-      "onChooseDirectory",
-      "Hello"
-    );
+const onDirectoriesChange = listenIPCMain("onChoosenDirectory").pipe(
+  map(([directories]) => {
+    console.log(directories);
     const container = document.querySelector("[data-directory-choosen]");
     container.innerHTML = "";
     for (const directory of directories) {
@@ -83,13 +97,13 @@ const directoriesChange = onClickChooseDirectory.pipe(
     }
     return directories;
   }),
-  shareReplay(1)
+  share()
 );
 
 const onFormChange = combineLatest({
   source: onChangeSourceInput,
   replace: onChangeReplaceInput,
-  directories: directoriesChange,
+  directories: onDirectoriesChange,
 }).pipe(shareReplay(1));
 
 const validation = onFormChange.pipe(
@@ -115,7 +129,7 @@ const onSubmitForm = onClickSubmitForm.pipe(
   withLatestFrom(onFormChange, (_, formValue) => formValue),
   exhaustMap((formValue) => {
     addTask();
-    return sendToIPCMain("onSubmitDirectory", formValue);
+    return sendAsyncToIPCMain("onSubmitDirectory", formValue);
   })
 );
 
