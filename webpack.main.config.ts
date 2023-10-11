@@ -2,7 +2,7 @@ import type { Configuration } from "webpack";
 import { DefinePlugin } from "webpack";
 import { rules } from "./webpack.rules";
 import path from "node:path";
-
+import CopyWebpackPlugin from "copy-webpack-plugin";
 const modulePath = path.resolve(__dirname, "dist_utility/utility_process");
 
 export const mainConfig: Configuration = {
@@ -22,6 +22,14 @@ export const mainConfig: Configuration = {
   plugins: [
     new DefinePlugin({
       UTILITY_PROCESS_MODULE_PATH: JSON.stringify(modulePath),
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "src", "assets"),
+          to: path.resolve(__dirname, ".webpack/main", "assets"),
+        },
+      ],
     }),
   ],
 };
