@@ -75,12 +75,12 @@ export function getGoldTrader() {
   });
 }
 
-const TERD_THAI_STATION_PATH = `/bangkok/terd-thai`;
-const THON_BURI__ROJJIRAPA_KINDERGARTEN = `/bangkok/thon-buri/rojjirapa-kindergarten`;
-
-const SOMDUL_AGROFORESTRY_HOME_STATION_PATH = `/samut-songkhram/bang-khon-thi/somdul-agroforestry-home`;
-
-export function getAirQuality(stationPath: string, country = "/thailand") {
+export const SOMDUL_AGROFORESTRY_HOME_STATION_PATH = `/samut-songkhram/bang-khon-thi/somdul-agroforestry-home`;
+export const ROJJIRAPA_KINDERGARTEN =
+  "https://www.iqair.com/th-en/thailand/bangkok/thon-buri/rojjirapa-kindergarten";
+export const TERD_THAI =
+  "https://www.iqair.com/th-en/thailand/bangkok/terd-thai";
+export function getAirQuality(stationURL: string) {
   return new Observable<AirQualityScape>((subscriber) => {
     async function run() {
       try {
@@ -90,13 +90,13 @@ export function getAirQuality(stationPath: string, country = "/thailand") {
         subscriber.add(() => browser.close());
 
         const page = await browser.newPage();
-        const url = `https://www.iqair.com/th-en${country}${stationPath}`;
-        await page.goto(url);
+
+        await page.goto(stationURL);
         const aqi = await page.$eval(".aqi-value", (el) =>
           Array.from(el.children).map((p) => p.textContent)
         );
 
-        const bgColor = await page.$eval(".aqi-box-green.aqi-value", (el) => {
+        const bgColor = await page.$eval(".aqi-value[class*=aqi-box]", (el) => {
           return getComputedStyle(el).backgroundColor;
         });
 
@@ -114,7 +114,7 @@ export function getAirQuality(stationPath: string, country = "/thailand") {
         const objectEmit = {
           imageSrc: src,
           value: aqi,
-          url,
+          url: stationURL,
           bgColor,
           stationName,
         };
@@ -127,10 +127,3 @@ export function getAirQuality(stationPath: string, country = "/thailand") {
     run();
   });
 }
-
-export const pptGetTerdThaiAirQuality = () =>
-  getAirQuality(TERD_THAI_STATION_PATH);
-export const pptGetThonBuri_RojjirapaKindergarten = () =>
-  getAirQuality(THON_BURI__ROJJIRAPA_KINDERGARTEN);
-export const pptGetSomdulAgroforestryHomeAirQuality = () =>
-  getAirQuality(SOMDUL_AGROFORESTRY_HOME_STATION_PATH);
