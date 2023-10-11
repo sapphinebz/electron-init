@@ -61,7 +61,7 @@ const successNotification = whenAppReady.pipe(
 );
 successNotification.subscribe();
 
-createApplicationMenu(whenAppReady).subscribe();
+whenAppReady.pipe(createApplicationMenu()).subscribe();
 
 const onWinReady = merge(onAppActivateNoWindows, whenAppReady).pipe(
   switchMap(async () => {
