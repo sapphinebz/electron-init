@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from "electron";
+import { app, BrowserWindow, Menu, Notification } from "electron";
 // const { app } = require('electron/main')
 // const {  } = require('electron/renderer')
 // const { shell } = require('electron/common')
@@ -7,11 +7,13 @@ import { fromAppEvent } from "./ipc-main/from-app-event";
 import { fromBrowserEvent } from "./ipc-main/from-browser-event";
 import {
   filter,
+  map,
   share,
   shareReplay,
   switchMap,
   takeUntil,
   tap,
+  withLatestFrom,
 } from "rxjs/operators";
 import path from "node:path";
 
@@ -54,6 +56,18 @@ const onAppActivateNoWindows = onAppActivate.pipe(
   filter(() => BrowserWindow.getAllWindows().length === 0),
   share()
 );
+
+const successNotification = whenAppReady.pipe(
+  map(
+    () =>
+      new Notification({
+        title: "Process Complete!",
+        body: "xxxxx",
+      })
+  ),
+  shareReplay(1)
+);
+successNotification.subscribe();
 
 createApplicationMenu(whenAppReady).subscribe();
 
@@ -127,9 +141,13 @@ onWinReady
   .pipe(
     switchMap(() =>
       listenIPCRenderer("onSubmitDirectory").pipe(
-        tap(([event, formValue]) => {
+        withLatestFrom(successNotification),
+        tap(([[event, formValue], notification]) => {
           console.log(formValue);
           setTimeout(() => {
+            if (Notification.isSupported()) {
+              notification.show();
+            }
             event.sender.send("onSubmitDirectory", "success!");
           }, 2000);
         })
